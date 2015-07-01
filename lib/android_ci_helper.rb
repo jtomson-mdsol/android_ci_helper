@@ -48,12 +48,10 @@ module AndroidCIHelper
 
     # list device actual name such as android-avd-21
     def self.list_running_emulators
-        devices = list_connected_emulators.map { |emu|
+        list_connected_emulators.map { |emu|
             port = emu.split("-").last
             avd_name = get_emulator_name(port)
         }.compact
-
-        devices
     end
 
     def self.get_emulator_name(port)
