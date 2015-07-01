@@ -26,6 +26,8 @@ module AndroidCIHelper
     def self.list_installed_emulators(version: nil, abi: "armeabi-v7a")
         list_avd = `#{ANDROID_CMD} list avd`
         names = list_avd.split("\n").grep(/Name:/).map { |name| name.strip.split[1] }
+        targets = list_avd.split("\n").grep(/Target:/).map { |target| target.strip.split(":")[1] }
+        abis = list_avd.split("\n").grep(/Tag\/ABI:/).map { |tagAbi| tagAbi.strip.split(":")[1] }
         if version
             names.select!.with_index do |name, index|
                 targets[index].include?(version) && (abi.nil? || abis[index].include?(abi))
@@ -50,16 +52,20 @@ module AndroidCIHelper
 
         connected_emulators = list_connected_emulators
         ports = []
-        connected_emulators.each { |emu|
-            ports << emu.split("-").last if emu.include? "emulator"
-            # skip if it does not contain emulator prefix (i.e., it's a real
-            # device)
-        }
-
-        ports.each do |port|
+        # connected_emulators.each { |emu|
+        #     ports << emu.split("-").last if emu.include? "emulator"
+        #     # skip if it does not contain emulator prefix (i.e., it's a real
+        #     # device)
+        # }
+        #
+        # ports.each do |port|
+        #     avd_name = get_emulator_name(port)
+        #     devices << avd_name unless avd_name.empty?
+        # end
+        devices = connected_emulators.map { |emu|
+            port = emu.split("-").last
             avd_name = get_emulator_name(port)
-            devices << avd_name unless avd_name.empty?
-        end
+        }.compact
 
         devices
     end
@@ -68,7 +74,7 @@ module AndroidCIHelper
         t = Net::Telnet::new("Host" => "localhost",
                              "Port" => port,
                              "Timeout" => 0.1)
-        avd_name = ""
+        avd_name = nil
         begin
             t.cmd("avd name") { |c| avd_name = c.split("\n").first }
         rescue
