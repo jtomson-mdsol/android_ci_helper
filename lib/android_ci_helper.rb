@@ -52,16 +52,6 @@ module AndroidCIHelper
 
         connected_emulators = list_connected_emulators
         ports = []
-        # connected_emulators.each { |emu|
-        #     ports << emu.split("-").last if emu.include? "emulator"
-        #     # skip if it does not contain emulator prefix (i.e., it's a real
-        #     # device)
-        # }
-        #
-        # ports.each do |port|
-        #     avd_name = get_emulator_name(port)
-        #     devices << avd_name unless avd_name.empty?
-        # end
         devices = connected_emulators.map { |emu|
             port = emu.split("-").last
             avd_name = get_emulator_name(port)
