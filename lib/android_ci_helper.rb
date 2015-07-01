@@ -19,18 +19,13 @@ module AndroidCIHelper
     end
 
     def self.adb_cmd(cmd)
-        return shell_out "#{ADB_CMD} #{cmd}"
+        shell_out "#{ADB_CMD} #{cmd}"
     end
 
     def self.list_installed_emulators
         # collect array like ["Name: <emu-name> ", "Name: <another-emu-name>"]
         name_output = `#{ANDROID_CMD} list avd`.split("\n").grep(/Name:/)
-
-        names = []
-        name_output.each { |name|
-            names << name.strip().split()[1]
-        }
-
+        names = name_output.map { |name| name.strip.split.last }
         return names
     end
 
@@ -38,11 +33,8 @@ module AndroidCIHelper
         output = `#{ADB_CMD} devices`.split("\n")
         return [] unless output.count > 1
 
-        emulators = []
         # first line is "List of devices attached"
-        output.drop(1).each { |line|
-            emulators << line.split("\t")[0]
-        }
+        emulators = output.drop(1).map { |line| line.split("\t").first }
         return emulators
     end
 
@@ -54,13 +46,14 @@ module AndroidCIHelper
     end
 
     def self.emulator_ready?
-        adb_prop_eq?("dev.bootcomplete",      "1") or return false
-        adb_prop_eq?("sys.boot_completed",    "1") or return false
+        adb_prop_eq?("dev.bootcomplete",       "1")       or return false
+        adb_prop_eq?("sys.boot_completed",     "1")       or return false
+
         (adb_prop_eq?("service.bootanim.exit", "1") || 
             adb_prop_eq?("init.svc.bootanim", "stopped")) or return false
+        
         return true
     end
-
 
     def self.kill_existing_emulator_sessions
         puts "--- stopping any running emulators"
@@ -91,16 +84,14 @@ module AndroidCIHelper
         puts "--- emulator process is alive"
 
         # wait for ready
-        attempts = 1
-        while attempts <= 20 do
-            puts "--- attempt # #{attempts}"
+        1.upto(20) do |attempt|
+            puts "--- attempt ##{attempt}"
             break if emulator_ready?
             puts "--- waiting 10 seconds before next attempt"
-            attempts += 1
             sleep 10
         end
 
-        if (attempts > 20)
+        unless emulator_ready?
             puts "******** error starting #{emulator_name} - timed out waiting for ready ********"
             return false
         end
