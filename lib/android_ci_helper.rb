@@ -27,13 +27,9 @@ module AndroidCIHelper
         list_avd = `#{ANDROID_CMD} list avd`
         names = list_avd.split("\n").grep(/Name:/).map { |name| name.strip.split[1] }
         if version
-            targets = list_avd.split("\n").grep(/Target:/).map { |target| target.strip.split(":")[1] }
-            abis = list_avd.split("\n").grep(/Tag\/ABI:/).map { |tagAbi| tagAbi.strip.split(":")[1] }
-            tmp = []
-            0.upto(targets.length-1) do |i|
-                tmp << names[i] if (targets[i].include?(version)) && (abi.nil? || abis[i].include?(abi))
+            names.select!.with_index do |name, index|
+                targets[index].include?(version) && (abi.nil? || abis[index].include?(abi))
             end
-            names = tmp
         end
         names
     end
