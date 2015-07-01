@@ -92,7 +92,7 @@ module AndroidCIHelper
         adb_cmd "start-server"
     end
 
-    # For most of the junit-tests, we don't need skip to pass the tests.
+    # For most of the junit-tests, we don't need skin to pass the tests.
     # However, without skin, the functional tests cannot properly locate the UI
     # element and the tests will fail.
     def self.start_and_wait_for_ready(emulator_name, no_skin:true)
