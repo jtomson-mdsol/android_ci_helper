@@ -79,7 +79,7 @@ module AndroidCIHelper
                 avd_token_found = true if t2=="-avd"
             end
         end
-        return devices
+        devices
     end
 
     def self.adb_prop_eq?(prop, expected)
@@ -117,7 +117,7 @@ module AndroidCIHelper
         $emulator_pid = fork {
             additional_params = ''
             additional_params += "-no-skin" if no_skin
-            puts `#{EMULATOR_CMD} -avd #{emulator_name}-no-audio -no-window -wipe-data #{additional_params}`
+            puts `#{EMULATOR_CMD} -avd #{emulator_name} -no-audio -no-window -wipe-data #{additional_params}`
         }
 
         puts "--- checking emulator pid: #{$emulator_pid}"
