@@ -1,4 +1,5 @@
 require "android_ci_helper/version"
+require "net/telnet"
 
 module AndroidCIHelper
 
@@ -24,21 +25,12 @@ module AndroidCIHelper
 
     def self.list_installed_emulators(version: nil, abi: "armeabi-v7a")
         list_avd = `#{ANDROID_CMD} list avd`
-        names = []
-        list_avd.split("\n").grep(/Name:/).each { |name|
-            names << name.strip().split()[1]
-        }
-        targets = []
-        list_avd.split("\n").grep(/Target:/).each { |target|
-            targets << target.strip().split(":")[1]
-        }
-        abis = []
-        list_avd.split("\n").grep(/Tag\/ABI:/).each { |tagAbi|
-            abis << tagAbi.strip().split(":")[1]
-        }
+        names = list_avd.split("\n").grep(/Name:/).map { |name| name.strip.split[1] }
         if version
+            targets = list_avd.split("\n").grep(/Target:/).map { |target| target.strip.split(":")[1] }
+            abis = list_avd.split("\n").grep(/Tag\/ABI:/).map { |tagAbi| tagAbi.strip.split(":")[1] }
             tmp = []
-            for i in 0..(targets.length-1)
+            0.upto(targets.length-1) do |i|
                 tmp << names[i] if (targets[i].include?(version)) && (abi.nil? || abis[i].include?(abi))
             end
             names = tmp
@@ -59,27 +51,33 @@ module AndroidCIHelper
     # list device actual name such as android-avd-21
     def self.list_running_emulators
         devices = []
-        # both linux and darwin provide command ps but they behavior differently
-        # by default. On linux, it only shows processes under the same terminal
-        # while on darwin, it shows processes under the same user id with the
-        # caller. On linux, we use param: aux to show all process belonging to
-        # the caller.
-        ps_cmd = "ps -aux"
-        host_os = RbConfig::CONFIG['host_os']
-        ps_cmd = "ps" if host_os.include?("darwin") || host_os.include?("mac os")
-        ps = `#{ps_cmd}`
 
-        ps.split("\n").grep(/emulator/).each do |t|
-            avd_token_found = false
-            t.split(" ").each do |t2|
-                if avd_token_found
-                    devices << t2
-                    break
-                end
-                avd_token_found = true if t2=="-avd"
-            end
+        connected_emulators = list_connected_emulators
+        ports = []
+        connected_emulators.each { |emu|
+            ports << emu.split("-").last if emu.include? "emulator"
+            # skip if it does not contain emulator prefix (i.e., it's a real
+            # device)
+        }
+
+        ports.each do |port|
+            avd_name = get_emulator_name(port)
+            devices << avd_name unless avd_name.empty?
         end
+
         devices
+    end
+
+    def self.get_emulator_name(port)
+        t = Net::Telnet::new("Host" => "localhost",
+                             "Port" => port,
+                             "Timeout" => 0.1)
+        avd_name = ""
+        begin
+            t.cmd("avd name") { |c| avd_name = c.split("\n").first }
+        rescue
+        end
+        avd_name
     end
 
     def self.adb_prop_eq?(prop, expected)
