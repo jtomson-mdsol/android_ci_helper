@@ -71,11 +71,11 @@ module AndroidCIHelper
     end
 
     def self.get_emulator_name(port)
-        t = Net::Telnet::new("Host" => "localhost",
-                             "Port" => port,
-                             "Timeout" => 0.1)
         avd_name = nil
         begin
+            t = Net::Telnet::new("Host" => "localhost",
+                                 "Port" => port,
+                                 "Timeout" => 0.1)
             t.cmd("avd name") { |c| avd_name = c.split("\n").first }
         rescue
         end
