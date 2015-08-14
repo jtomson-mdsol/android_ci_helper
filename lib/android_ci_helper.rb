@@ -1,4 +1,4 @@
-require "android_ci_helper/version"
+require_relative "android_ci_helper/version"
 require "net/telnet"
 
 module AndroidCIHelper
@@ -60,7 +60,15 @@ module AndroidCIHelper
             t = Net::Telnet::new("Host" => "localhost",
                                  "Port" => port,
                                  "Timeout" => 0.1)
-            t.cmd("avd name") { |c| avd_name = c.split("\n").first }
+            t.waitfor(/OK/n)
+            t.cmd("avd name") do |c|
+                avd_name = c.split("\n").first
+                # c is the output result for the commands. For the multiple-line
+                # result, it can come within a call or multiple calls
+                # since we only care about the first line of the result, if it is
+                # valid (not empty or nil), break.
+                break if avd_name
+            end
         rescue
         end
         avd_name
